@@ -3,9 +3,9 @@ import { getSession } from "@/lib/auth";
 
 const allowedTypes = new Set(["artists", "tracks"] as const);
 const allowedRanges = new Set([
-  "short_term",
-  "medium_term",
-  "long_term",
+  "short_term", //4 Weeks
+  "medium_term", // 6 Months
+  "long_term", // All Time
 ] as const);
 
 export async function GET(req: Request) {
