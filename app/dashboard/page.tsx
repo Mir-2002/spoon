@@ -8,6 +8,7 @@ import TopArtists from "@/components/dashboard/TopArtists";
 import Button from "@/components/ui/Button";
 import type { TimeRange } from "@/lib/spotify";
 import TopTracks from "@/components/dashboard/TopTracks";
+import TopAlbums from "@/components/dashboard/TopAlbums";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -51,6 +52,7 @@ export default function Dashboard() {
       <div className="flex flex-col gap-8 sm:gap-10">
         <TopArtists timeRange={timeRange} limit={10} />
         <TopTracks TimeRange={timeRange} limit={10} />
+        <TopAlbums TimeRange={timeRange} limit={10} />
       </div>
     </Section>
   );
