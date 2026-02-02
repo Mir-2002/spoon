@@ -59,14 +59,16 @@ export default function TopArtists({
     };
   }, [timeRange, limit]);
   return (
-    <Section className="flex flex-col gap-2">
-      <h2 className="text-xl text-special-blue font-semibold">Top Artists</h2>
+    <Section className="flex flex-col items-center gap-2">
+      <h2 className="text-xl text-special-blue font-semibold self-start">
+        Top Artists
+      </h2>
 
       {loading ? <span>Loading…</span> : null}
 
       {error ? <div>{error}</div> : null}
 
-      <div className="flex flex-row gap-4 overflow-auto w-full">
+      {/* <div className="flex flex-row gap-4 overflow-auto w-full">
         {(data?.items ?? []).map((artist, i) => {
           const img = artist.images?.[0]?.url;
           const href = artist.external_urls?.spotify ?? "#";
@@ -79,14 +81,14 @@ export default function TopArtists({
               imageAlt={artist.name}
               href={href}
             >
-              <div className="flex flex-col h-full w-full p-1 hover:text-special-black transition-colors duration-200">
-                <div className="flex flex-col items-start h-3/5 gap-1 w-full">
+              <div className="flex flex-col h-full w-full">
+                <div className="flex flex-col items-start h-3/5 p-1 gap-1 w-full">
                   <p className="h-1/5 text-xs">#{i + 1}</p>
-                  <h3 className="h-3/5 text-base font-semibold text-special-blue tracking-tighter w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                  <h3 className="h-3/5 text-base font-semibold text-special-blue tracking-tighter text-ellipsis overflow-hidden whitespace-nowrap w-full">
                     {artist.name}
                   </h3>
                 </div>
-                <div className="h-2/5 w-full flex items-start">
+                <div className="h-2/5 w-full flex items-start p-1">
                   {typeof artist.popularity === "number" ? (
                     <span className="text-xs">
                       Popularity: {artist.popularity}
@@ -95,6 +97,22 @@ export default function TopArtists({
                 </div>
               </div>
             </Card>
+          );
+        })}
+      </div> */}
+      <div className="w-100 h-60 bg-red-200 grid grid-cols-5 grid-rows-2">
+        {(data?.items ?? []).map((artist, i) => {
+          const img = artist.images?.[0]?.url;
+          const href = artist.external_urls?.spotify ?? "#";
+
+          return (
+            <div
+              key={artist.id}
+              className={`${
+                i === 0 ? "row-span-2 col-span-3" : ""
+              } bg-cover bg-center inset-shadow-md`}
+              style={{ backgroundImage: `url('${img}')` }}
+            ></div>
           );
         })}
       </div>

@@ -24,7 +24,7 @@ export default function Card({
     <Link
       className={`${
         orientation === "vertical" ? "w-30 h-64" : "w-48 h-28"
-      } shrink-0 rounded-lg border-2 border-gray-500 ${className}`}
+      } rounded-lg border-2 border-gray-500 ${className}`}
       href={href}
     >
       {/*Image*/}
@@ -33,8 +33,7 @@ export default function Card({
           <Image
             src={imageUrl}
             alt={imageAlt || "Card image"}
-            width={300}
-            height={300}
+            fill
             className="w-full h-full object-cover rounded-t-lg"
           />
         ) : (
@@ -44,7 +43,7 @@ export default function Card({
         )}
       </div>
       {/*Content*/}
-      <div className="w-full h-1/2 flex flex-col hover:bg-foreground transition-colors duration-200">
+      <div className="w-full h-1/2 p-2 flex flex-col justify-center">
         {children}
       </div>
     </Link>
