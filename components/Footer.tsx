@@ -9,7 +9,7 @@ export default function Footer() {
           A project by{" "}
           <span>
             <a
-              href="macasindel-ahmer.dev"
+              href="https://macasindel-ahmer.dev"
               className="text-special-blue hover:underline"
             >
               Ahmer.
