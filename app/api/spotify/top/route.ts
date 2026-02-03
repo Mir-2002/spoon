@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import {
+  buildSpotifyCacheKey,
+  fetchWithSpotifyCache,
+  getTimeRangeTtl,
+} from "../../../../lib/spotify-cache";
 
 const allowedTypes = new Set(["artists", "tracks"] as const);
 const allowedRanges = new Set([
@@ -10,7 +15,7 @@ const allowedRanges = new Set([
 
 export async function GET(req: Request) {
   const session = await getSession();
-  const accessToken = session?.accessToken;
+  const accessToken = (session as any)?.accessToken as string | undefined;
 
   if (!accessToken) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -50,17 +55,36 @@ export async function GET(req: Request) {
   spotifyUrl.searchParams.set("limit", String(limit));
   spotifyUrl.searchParams.set("offset", String(offset));
 
-  const res = await fetch(spotifyUrl.toString(), {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
+  const cacheKey = buildSpotifyCacheKey("/api/spotify/top", {
+    type,
+    time_range,
+    limit,
+    offset,
+    user:
+      (session?.user as any)?.email ?? (session?.user as any)?.name ?? "user",
+  });
+
+  const ttlMs = getTimeRangeTtl(time_range as any);
+
+  const data = await fetchWithSpotifyCache(
+    cacheKey,
+    async () => {
+      const res = await fetch(spotifyUrl.toString(), {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        // allow caching on the Next.js side as well
+        next: { revalidate: Math.floor(ttlMs / 1000) },
+      });
+
+      const json = await res.json().catch(() => null);
+      return { status: res.status, json };
     },
-    // Avoid caching user-specific data
-    cache: "no-store",
-  });
+    ttlMs
+  );
 
-  const data = await res.json().catch(() => null);
-
-  return NextResponse.json(data ?? { error: "Invalid response from Spotify" }, {
-    status: res.status,
-  });
+  return NextResponse.json(
+    data.json ?? { error: "Invalid response from Spotify" },
+    { status: data.status }
+  );
 }

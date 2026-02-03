@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import {
+  buildSpotifyCacheKey,
+  fetchWithSpotifyCache,
+  getTimeRangeTtl,
+} from "../../../../lib/spotify-cache";
 
 const allowedRanges = new Set([
   "short_term",
@@ -19,7 +24,7 @@ type AlbumAgg = {
 
 export async function GET(req: Request) {
   const session = await getSession();
-  const accessToken = session?.accessToken;
+  const accessToken = (session as any)?.accessToken as string | undefined;
 
   if (!accessToken) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -41,26 +46,47 @@ export async function GET(req: Request) {
     );
   }
 
-  // We derive albums from top tracks (Spotify has no /me/top/albums endpoint)
-  // Fetch up to 50 top tracks for better aggregation.
-  const spotifyUrl = new URL("https://api.spotify.com/v1/me/top/tracks");
-  spotifyUrl.searchParams.set("time_range", time_range);
-  spotifyUrl.searchParams.set("limit", "50");
+  const limit = Math.min(Math.max(parseInt(limitRaw, 10) || 10, 1), 50);
+  const ttlMs = getTimeRangeTtl(time_range as any);
 
-  const res = await fetch(spotifyUrl.toString(), {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
+  const cacheKey = buildSpotifyCacheKey("/api/spotify/top-albums", {
+    time_range,
+    limit,
+    user:
+      (session?.user as any)?.email ?? (session?.user as any)?.name ?? "user",
   });
 
-  const data = await res.json().catch(() => null);
+  const result = await fetchWithSpotifyCache(
+    cacheKey,
+    async () => {
+      // We derive albums from top tracks (Spotify has no /me/top/albums endpoint)
+      const spotifyUrl = new URL("https://api.spotify.com/v1/me/top/tracks");
+      spotifyUrl.searchParams.set("time_range", time_range);
+      spotifyUrl.searchParams.set("limit", "50");
 
-  if (!res.ok) {
-    return NextResponse.json(data ?? { error: "Spotify request failed" }, {
-      status: res.status,
-    });
+      const res = await fetch(spotifyUrl.toString(), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        next: { revalidate: Math.floor(ttlMs / 1000) },
+      });
+
+      const data = await res.json().catch(() => null);
+      return { status: res.status, data };
+    },
+    ttlMs
+  );
+
+  if (result.status !== 200) {
+    return NextResponse.json(
+      result.data ?? { error: "Spotify request failed" },
+      {
+        status: result.status,
+      }
+    );
   }
 
-  const items: any[] = Array.isArray(data?.items) ? data.items : [];
+  const items: any[] = Array.isArray(result.data?.items)
+    ? result.data.items
+    : [];
 
   const map = new Map<string, AlbumAgg>();
 
@@ -91,8 +117,6 @@ export async function GET(req: Request) {
       count: 1,
     });
   }
-
-  const limit = Math.min(Math.max(parseInt(limitRaw, 10) || 10, 1), 50);
 
   const albums = Array.from(map.values())
     .sort((a, b) => b.count - a.count)

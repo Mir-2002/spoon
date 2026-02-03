@@ -3,6 +3,7 @@ import { TASA_Orbiter, Zalando_Sans_Expanded } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import AuthSessionProvider from "@/components/SessionProvider";
+import Footer from "@/components/Footer";
 
 const zalandoSans = Zalando_Sans_Expanded({
   variable: "--font-zalando-sans-expanded",
@@ -32,9 +33,14 @@ export default function RootLayout({
         className={`${zalandoSans.variable} ${tasaOrbiter.variable} antialiased`}
       >
         <AuthSessionProvider>
-          <div className="mx-auto sm:max-w-xl md:max-w-2xl lg:max-w-4xl xl:max-w-6xl">
+          <div className="min-h-dvh">
             <Header />
-            {children}
+
+            <main className="mx-auto sm:max-w-xl md:max-w-2xl lg:max-w-4xl xl:max-w-6xl">
+              {children}
+            </main>
+
+            <Footer />
           </div>
         </AuthSessionProvider>
       </body>

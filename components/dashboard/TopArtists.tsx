@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Card from "@/components/ui/Card";
+import Image from "next/image";
 import type { TimeRange } from "@/lib/spotify";
 import Section from "../ui/Section";
+import Button from "../ui/Button";
+import LoadingView from "../ui/LoadingView";
+import { pickSpotifyImage } from "@/lib/spotify-images";
+import { useRouter } from "next/navigation";
 
 // Spotify API types
 type SpotifyImage = { url: string; height?: number; width?: number };
@@ -22,9 +26,56 @@ type SpotifyPaging<T> = {
   items: T[];
 };
 
+function ArtistTile({
+  artist,
+  rank,
+  className = "",
+}: {
+  artist?: SpotifyArtist;
+  rank: number;
+  className?: string;
+}) {
+  const img = pickSpotifyImage(artist?.images as any, { minWidth: 640 });
+
+  return (
+    <a
+      href={artist?.external_urls?.spotify ?? "#"}
+      target="_blank"
+      rel="noreferrer"
+      className={`group relative block h-full w-full overflow-hidden bg-special-black/20 ${className}`}
+      aria-label={artist ? `Open ${artist.name} on Spotify` : undefined}
+      title={artist?.name}
+    >
+      {img ? (
+        <Image
+          src={img}
+          alt={artist?.name ?? "Artist"}
+          fill
+          sizes="(min-width: 1024px) 50vw, 33vw"
+          className="object-cover"
+        />
+      ) : null}
+
+      <div className="absolute inset-0 bg-special-black/20" />
+      <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-special-black/90 via-special-black/30 to-transparent" />
+
+      <div className="absolute inset-x-0 bottom-0 p-2">
+        <div className="flex items-end justify-between gap-2">
+          <p className="text-xs text-foreground/70">#{rank}</p>
+          <p className="text-sm font-semibold text-foreground truncate">
+            {artist?.name ?? ""}
+          </p>
+        </div>
+      </div>
+
+      <div className="absolute inset-0 transition-transform duration-300 group-hover:scale-[1.03]" />
+    </a>
+  );
+}
+
 export default function TopArtists({
   timeRange,
-  limit = 10,
+  limit = 5,
 }: {
   timeRange: TimeRange;
   limit?: number;
@@ -32,6 +83,7 @@ export default function TopArtists({
   const [data, setData] = useState<SpotifyPaging<SpotifyArtist> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
@@ -58,64 +110,60 @@ export default function TopArtists({
       cancelled = true;
     };
   }, [timeRange, limit]);
+
+  const top5 = (data?.items ?? []).slice(0, 5);
+
+  if (loading) {
+    return (
+      <Section className="flex flex-col items-center gap-6">
+        <h2 className="text-xl text-special-blue font-semibold self-start">
+          Top Artists
+        </h2>
+        <LoadingView title="Loading top artists…" />
+      </Section>
+    );
+  }
+
+  if (error) {
+    return (
+      <Section className="flex flex-col items-center gap-6">
+        <h2 className="text-xl text-special-blue font-semibold self-start">
+          Top Artists
+        </h2>
+        <div className="text-red-400 w-full">{error}</div>
+      </Section>
+    );
+  }
+
   return (
-    <Section className="flex flex-col items-center gap-2">
+    <Section className="flex flex-col items-center gap-6">
       <h2 className="text-xl text-special-blue font-semibold self-start">
         Top Artists
       </h2>
 
-      {loading ? <span>Loading…</span> : null}
+      {/* Chart container */}
+      <div className="w-3/4 h-50 flex flex-row lg:h-90">
+        {/* Left side: #1 artist */}
+        <div className="w-1/2 h-full">
+          <ArtistTile artist={top5[0]} rank={1} />
+        </div>
 
-      {error ? <div>{error}</div> : null}
-
-      {/* <div className="flex flex-row gap-4 overflow-auto w-full">
-        {(data?.items ?? []).map((artist, i) => {
-          const img = artist.images?.[0]?.url;
-          const href = artist.external_urls?.spotify ?? "#";
-
-          return (
-            <Card
-              key={artist.id}
-              orientation="vertical"
-              imageUrl={img}
-              imageAlt={artist.name}
-              href={href}
-            >
-              <div className="flex flex-col h-full w-full">
-                <div className="flex flex-col items-start h-3/5 p-1 gap-1 w-full">
-                  <p className="h-1/5 text-xs">#{i + 1}</p>
-                  <h3 className="h-3/5 text-base font-semibold text-special-blue tracking-tighter text-ellipsis overflow-hidden whitespace-nowrap w-full">
-                    {artist.name}
-                  </h3>
-                </div>
-                <div className="h-2/5 w-full flex items-start p-1">
-                  {typeof artist.popularity === "number" ? (
-                    <span className="text-xs">
-                      Popularity: {artist.popularity}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div> */}
-      <div className="w-100 h-60 bg-red-200 grid grid-cols-5 grid-rows-2">
-        {(data?.items ?? []).map((artist, i) => {
-          const img = artist.images?.[0]?.url;
-          const href = artist.external_urls?.spotify ?? "#";
-
-          return (
-            <div
-              key={artist.id}
-              className={`${
-                i === 0 ? "row-span-2 col-span-3" : ""
-              } bg-cover bg-center inset-shadow-md`}
-              style={{ backgroundImage: `url('${img}')` }}
-            ></div>
-          );
-        })}
+        {/* Right side: #2-#5 artists */}
+        <div className="w-1/2 h-full grid grid-cols-2 grid-rows-2">
+          <ArtistTile artist={top5[1]} rank={2} />
+          <ArtistTile artist={top5[2]} rank={3} />
+          <ArtistTile artist={top5[3]} rank={4} />
+          <ArtistTile artist={top5[4]} rank={5} />
+        </div>
       </div>
+
+      <Button
+        variant="primary"
+        className="outline-0 bg-transparent self-end shadow-none text-lg text-special-blue tracking-tighter hover:bg-special-blue hover:text-foreground transition-colors duration-200"
+        onClick={() => router.push("/dashboard/top-artists")}
+      >
+        See All Top Artists
+      </Button>
     </Section>
   );
 }

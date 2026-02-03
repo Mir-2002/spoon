@@ -40,8 +40,8 @@ export default function Dashboard() {
   }
 
   return (
-    <Section className="py-6 sm:py-8 px-4 sm:px-0">
-      <div className="flex flex-col gap-3 mb-6 sm:mb-8">
+    <Section>
+      <div className="flex flex-col p-4">
         <TimeRangePicker
           value={timeRange}
           onChangeAction={setTimeRange}
@@ -49,10 +49,10 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="flex flex-col gap-8 sm:gap-10">
-        <TopArtists timeRange={timeRange} limit={10} />
-        <TopTracks TimeRange={timeRange} limit={10} />
-        <TopAlbums TimeRange={timeRange} limit={10} />
+      <div className="flex flex-col gap-4 sm:gap-10 px-4">
+        <TopArtists timeRange={timeRange} limit={5} />
+        <TopTracks TimeRange={timeRange} limit={5} />
+        <TopAlbums TimeRange={timeRange} limit={5} />
       </div>
     </Section>
   );

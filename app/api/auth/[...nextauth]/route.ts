@@ -53,7 +53,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, account, user }) {
+    async jwt({ token, account, user, profile }) {
       // Initial sign-in: persist tokens
       if (account && user) {
         return {
@@ -62,7 +62,15 @@ export const authOptions: NextAuthOptions = {
           refreshToken: account.refresh_token,
           accessTokenExpires: (account.expires_at ?? 0) * 1000,
           user,
-        } satisfies SpotifyToken;
+          spotifyProfile: profile
+            ? {
+                id: (profile as any).id,
+                display_name:
+                  (profile as any).display_name ?? (profile as any).username,
+                images: (profile as any).images,
+              }
+            : undefined,
+        } satisfies SpotifyToken & { spotifyProfile?: any };
       }
 
       // Return previous token if still valid
@@ -79,10 +87,13 @@ export const authOptions: NextAuthOptions = {
       return refreshAccessToken(t);
     },
     async session({ session, token }) {
-      const t = token as SpotifyToken;
-      // expose accessToken on the session
+      const t = token as SpotifyToken & { spotifyProfile?: any };
+      // expose accessToken + profile on the session
       (session as any).accessToken = t.accessToken;
       (session as any).error = t.error;
+      if (t.spotifyProfile) {
+        (session as any).spotifyProfile = t.spotifyProfile;
+      }
       return session;
     },
   },
